@@ -19,10 +19,10 @@ class OtherFormatsParser(ImageParser):
     - test_file
     """
 
-    def __init__(self, filepath, patches, args):
+    def __init__(self, file_reader, args):
         self.root_size = 0
         self.dirsize = 0
-        super().__init__(filepath, patches, args)
+        super().__init__(file_reader, args)
 
     def ceil_to_sector(self, size):
         s = SECTOR_SIZE
@@ -58,15 +58,8 @@ class OtherFormatsParser(ImageParser):
                 if not is_directory:
                     self.add_file_to_toc(filename, file["data_offset"], file["size"])
 
-    def get_root(self):
-        """
-        Returns the file path.
-        Separate method to allow subclassing for directories.
-        """
-        return self.filepath
-
     @abstractmethod
-    def get_files(self, start_path, main_res):
+    def get_files(self):
         """
         Returns the file tree as a dictionary, with:
         - key: the directory path (relative to the root)
@@ -106,8 +99,7 @@ class OtherFormatsParser(ImageParser):
         sec_sz = SECTOR_SIZE
 
         # get the files
-        files = {}
-        self.get_files(self.get_root(), files)
+        files = self.get_files()
 
         # calculate folder sizes
         for key, value in files.items():

@@ -2,51 +2,52 @@
 # https://github.com/antangelo/xdvdfs
 # See Notice.txt for licensing information
 
-import os
-
 from .image_parser import XBE_HEADER
 from .other_formats_parser import OtherFormatsParser
 
 
 class DirectoryParser(OtherFormatsParser):
     """
-    Handles unpacked files inside a directory.
-    The input file is expected to be the default.xbe file
+    Handles loose files inside a raw or compressed directory.
+    The input file is expected to be (or contain) the default.xbe file
     """
 
-    def get_file_data_in_range(self, node, start, end):
+    def get_file_data_in_range(self, node):
+        f = self.f
         filename = node["file"].split(":")[1]
-        filepath = self.get_root() + "/" + filename
-        with open(filepath, 'rb') as f:
-            f.seek(node["start"])
-            return f.read(node["end"] - node["start"])
+        f2 = f.open_subfile(filename)
+        f2.seek(node["start"])
+        data = f2.read(node["end"] - node["start"])
+        f2.close()
+        return data
 
     def get_file_data(self, filename, start, length):
-        filepath = self.get_root() + "/" + filename
-        with open(filepath, 'rb') as f:
-            f.seek(start)
-            return f.read(length)
+        f = self.f
+        f2 = f.open_subfile(filename)
+        f2.seek(start)
+        data = f2.read(length)
+        f2.close()
+        return data
 
-    def get_root(self):
-        """
-        Returns the directory containing the input file
-        """
-        return os.path.dirname(self.filepath)
+    def test_file(self):
+        if not self.f.valid('default.xbe'):
+            return False
+        self.f.open()
+        res = self.f.read(4) == XBE_HEADER
+        self.f.close()
+        return res
 
-    @staticmethod
-    def test_file(path):
-        with open(path, 'rb') as f:
-            return f.read(4) == XBE_HEADER
-
-    def get_files(self, start_path, main_res):
-        for root, dirs, files in os.walk(start_path):
+    def get_files(self):
+        start_path = self.f.get_root().strip('/')
+        main_res = {}
+        for root, dirs, files in self.f.walk():
             nodes = []
             node_size = 0
             for file in files:
-                filepath = os.path.join(root, file)
-                filepath2 = filepath[(len(start_path) + 1):].replace("\\","/")
+                filepath = (root.replace("\\","/") + "/" + file).strip('/')
+                filepath2 = filepath[(len(start_path)):].strip('/')
                 filename = filepath2.split("/")[-1]
-                size = os.path.getsize(filepath)
+                size = self.f.get_subfile_size(filepath)
 
                 padding = (4 - ((14 + len(filename)) % 4)) % 4
                 entry_size = 14 + len(filename) + padding
@@ -60,8 +61,8 @@ class DirectoryParser(OtherFormatsParser):
                     "folder": False
                 })
             for directory in dirs:
-                dirpath = os.path.join(root, directory)
-                dirpath2 = dirpath[(len(start_path) + 1):].replace("\\","/")
+                dirpath = (root.replace("\\","/") + "/" + directory).strip('/')
+                dirpath2 = dirpath[(len(start_path)):].strip('/')
                 dirname = dirpath2.split("/")[-1]
 
                 padding = (4 - ((14 + len(dirname)) % 4)) % 4
@@ -75,9 +76,10 @@ class DirectoryParser(OtherFormatsParser):
                     "entry_size": entry_size,
                     "folder": True
                 })
-            rootname = root[(len(start_path) + 1):].replace("\\","/")
+            rootname = root[(len(start_path)):].replace("\\","/").strip('/')
             res = {
                 "nodes": nodes,
                 "size": node_size
             }
             main_res[rootname] = res
+        return main_res

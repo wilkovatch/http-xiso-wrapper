@@ -12,7 +12,11 @@ class XisoParser(ImageParser):
     """
     Handles Standard XISO and Redump-style XISO files
     """
-    def get_file_data_in_range(self, node, start, end):
+    def __init__(self, file_reader, args):
+        self.image_start = None
+        super().__init__(file_reader, args)
+
+    def get_file_data_in_range(self, node):
         f = self.f
         f.seek(self.image_start + node["offset"] + node["start"])
         return f.read(node["end"] - node["start"])
@@ -29,40 +33,40 @@ class XisoParser(ImageParser):
     def requires_media_patch(self):
         return self.image_start > 0
 
-    @staticmethod
-    def test_file(path):
-        with open(path, 'rb') as f:
-            root_sector, _, _ = XisoParser.read_header(f)
-            return root_sector is not None
+    def test_file(self):
+        if not self.f.valid('*.iso'):
+            return False
+        self.f.open()
+        root_sector, _ = self.read_header()
+        self.f.close()
+        return root_sector is not None
 
     def get_toc(self):
-        f = self.f
         self.toc = None
 
-        root_sector, root_size, image_start = XisoParser.read_header(f)
-        self.image_start = image_start
+        root_sector, root_size = self.read_header()
         if root_sector is not None:
             self.toc = {}
             self.add_header_to_toc(root_sector, root_size)
             root_offset = root_sector * SECTOR_SIZE
             self.traverse_file_tree("", root_offset, root_size, 0)
 
-    @staticmethod
-    def read_header(f, full = False):
-        image_start = FULL_DUMP_DATA_OFFSET if full else 0
+    def read_header(self, full = False):
+        f = self.f
 
-        f.seek(image_start + HEADER_OFFSET)
+        self.image_start = FULL_DUMP_DATA_OFFSET if full else 0
+        f.seek(self.image_start + HEADER_OFFSET)
         header_magic = f.read(len(HEADER_MAGIC))
         if header_magic != HEADER_MAGIC:
             if full:
-                return None, None, None
+                return None, None
             else:
-                return XisoParser.read_header(f, True)
+                return self.read_header(True)
 
-        root_sector = XisoParser.read_uint32(f)
-        root_size = XisoParser.read_uint32(f)
+        root_sector = f.read_uint32()
+        root_size = f.read_uint32()
 
-        return root_sector, root_size, image_start
+        return root_sector, root_size
 
     def traverse_file_tree(self, parent_path, parent_offset, parent_size,
                            node_offset):
@@ -103,10 +107,10 @@ class XisoParser(ImageParser):
         f = self.f
 
         b = f.read(14)
-        left_offset = XisoParser.get_uint16(b, 0)
-        right_offset = XisoParser.get_uint16(b, 2)
-        node_sector = XisoParser.get_uint32(b, 4)
-        node_size = XisoParser.get_uint32(b, 8)
+        left_offset = f.get_uint16(b, 0)
+        right_offset = f.get_uint16(b, 2)
+        node_sector = f.get_uint32(b, 4)
+        node_size = f.get_uint32(b, 8)
         attributes = b[12]
         filename_length = b[13]
         data = (left_offset, right_offset, node_sector, node_size, attributes)

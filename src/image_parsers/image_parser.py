@@ -3,8 +3,6 @@
 # See Notice.txt for licensing information
 
 from abc import ABC, abstractmethod
-import os
-import struct
 import json
 
 from .patches.patcher import Patcher
@@ -28,14 +26,21 @@ class ImageParser(ABC):
     See OtherFormatsParser for extension for non-XISO formats.
     """
 
-    def __init__(self, filepath, patches, args):
+    def __init__(self, file_reader, args):
         self.args = args
+        self.f = file_reader
         self.verbose = self.args.verbose
-        self.patcher = Patcher(self)
-        self.filepath = filepath
-        self.filesize = os.path.getsize(filepath)
-        self.f = open(filepath, 'rb')
+        self.patcher = None
+        self.filesize = 0
         self.toc = None
+        self.avl_tree = None
+        self.patches = None
+        self.valid = self.test_file()
+
+    def parse(self, patches):
+        self.f.open()
+        self.patcher = Patcher(self)
+        self.filesize = self.f.get_size()
         self.get_toc()
         if self.verbose:
             print(json.dumps(self.toc, indent=4))
@@ -95,6 +100,8 @@ class ImageParser(ABC):
             "size": node_size,
             "extra": None
         }
+        if self.args.verbose:
+            print("found file: " + file_path)
 
     def add_entry_to_toc(self, folder, file_path, toc_offset, toc_size, data):
         self.toc["TOC:" + file_path[1:]] = {
@@ -109,6 +116,8 @@ class ImageParser(ABC):
                 "attributes": data[4],
             },
         }
+        if self.args.verbose:
+            print("found entry: " + file_path)
 
     def add_header_to_toc(self, root_offset, root_size):
         self.toc["HEADER:HEADER"] = {
@@ -119,6 +128,8 @@ class ImageParser(ABC):
                 "root_size": root_size
             }
         }
+        if self.args.verbose:
+            print("found header")
 
     def get_node_data_in_range(self, node):
         """
@@ -130,40 +141,44 @@ class ImageParser(ABC):
         s = node["start"]
         e = node["end"]
         if node_type == "HEADER":
-            data = self.get_header_data_in_range(node, s, e)
+            data = self.get_header_data_in_range(node)
         elif node_type == "TOC":
-            data = self.get_toc_data_in_range(node, s, e)
+            data = self.get_toc_data_in_range(node)
         elif node_type == "FILE":
-            data = self.get_file_data_in_range(node, s, e)
+            data = self.get_file_data_in_range(node)
             if filename in self.patches:
                 patch = self.patches[filename]
                 data = self.patcher.apply_patch(patch, data, s)
         else:
-            data = self.get_empty_data_in_range(node["start"], node["end"])
+            data = self.get_empty_data_in_range(s, e)
         start_padding = self.get_empty_data_in_range(0, node["start_padding"])
         end_padding = self.get_empty_data_in_range(0, node["end_padding"])
         return start_padding + data + end_padding
 
-    def get_header_data_in_range(self, node, start, end):
+    def get_header_data_in_range(self, node):
+        start = node["start"]
+        end = node["end"]
         key = node["file"]
         toc = self.toc[key]
-        offset = self.uint32_bytes(toc["extra"]["root_offset"])
-        size = self.uint32_bytes(toc["extra"]["root_size"])
+        offset = self.f.uint32_bytes(toc["extra"]["root_offset"])
+        size = self.f.uint32_bytes(toc["extra"]["root_size"])
         timestamp = bytes([0x00 for i in range(8)])
         padding = bytes([0x00 for i in range(1992)])
         h = HEADER_MAGIC
         full_data = h + offset + size + timestamp + padding + h
         return full_data[start:end]
 
-    def get_toc_data_in_range(self, node, start, end):
+    def get_toc_data_in_range(self, node):
+        start = node["start"]
+        end = node["end"]
         key = node["file"]
         toc = self.toc[key]
         name = key.split(":")[1].split("/")[-1]
         d = toc["extra"]
-        l = self.uint16_bytes(d["left_offset"])
-        r = self.uint16_bytes(d["right_offset"])
-        sec = self.uint32_bytes(d["node_sector"])
-        siz = self.uint32_bytes(d["node_size"])
+        l = self.f.uint16_bytes(d["left_offset"])
+        r = self.f.uint16_bytes(d["right_offset"])
+        sec = self.f.uint32_bytes(d["node_sector"])
+        siz = self.f.uint32_bytes(d["node_size"])
         attr = bytes([d["attributes"]])
         namelen = bytes([len(name)])
         full_data = l + r + sec + siz + attr + namelen + name.encode('ascii')
@@ -175,7 +190,7 @@ class ImageParser(ABC):
         return bytes([0xFF for i in range(end - start)])
 
     @abstractmethod
-    def get_file_data_in_range(self, node, start, end):
+    def get_file_data_in_range(self, node):
         """
         Returns the data of the specified file in the input byte range.
         """
@@ -186,11 +201,11 @@ class ImageParser(ABC):
 
     def get_file_uint32(self, filename, start):
         data = self.get_file_data(filename, start, start + 4)
-        return ImageParser.get_uint32(data, 0)
+        return self.f.get_uint32(data, 0)
 
     def get_file_uint16(self, filename, start):
         data = self.get_file_data(filename, start, start + 2)
-        return ImageParser.get_uint16(data, 0)
+        return self.f.get_uint16(data, 0)
 
     @abstractmethod
     def get_toc(self):
@@ -205,9 +220,8 @@ class ImageParser(ABC):
         Returns the size of the _output_ XISO file
         """
 
-    @staticmethod
     @abstractmethod
-    def test_file(path):
+    def test_file(self):
         """
         Checks whether the specified file is in the format
         handled by this class
@@ -215,25 +229,3 @@ class ImageParser(ABC):
 
     def requires_media_patch(self):
         return False
-
-    def uint32_bytes(self, n):
-        return n.to_bytes(4, byteorder='little')
-
-    def uint16_bytes(self, n):
-        return n.to_bytes(2, byteorder='little')
-
-    @staticmethod
-    def read_uint32(f):
-        return struct.unpack('<I', f.read(4))[0]
-
-    @staticmethod
-    def read_uint16(f):
-        return struct.unpack('<H', f.read(2))[0]
-
-    @staticmethod
-    def get_uint16(b, i):
-        return int.from_bytes(b[i:i+2], byteorder='little')
-
-    @staticmethod
-    def get_uint32(b, i):
-        return int.from_bytes(b[i:i+4], byteorder='little')

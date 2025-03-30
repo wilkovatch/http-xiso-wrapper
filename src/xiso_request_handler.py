@@ -9,6 +9,8 @@ import time
 
 from argument_parser import get_args
 from image_parsers.directory_parser import DirectoryParser
+from image_parsers.file_readers.file_reader import FileReader
+from image_parsers.file_readers.zip_reader import ZipReader
 from image_parsers.patches.patch_parser import PatchParser
 from image_parsers.xiso_parser import XisoParser
 
@@ -73,10 +75,10 @@ class XisoRequestHandler(SimpleHTTPRequestHandler):
             self.send_error(404, 'File not found')
             return None
 
-        f = open(path, 'rb')
-        self.xiso_parser.f = f
+        self.xiso_parser.f.open()
 
         file_len = self.xiso_parser.get_size()
+
         self.file_len = file_len
         if ranged:
             if first >= file_len:
@@ -108,12 +110,19 @@ class XisoRequestHandler(SimpleHTTPRequestHandler):
         return xiso_cache[path]
 
     def get_new_parser_for_file(self, path):
-        if XisoParser.test_file(path):
-            return XisoParser(path, self.patches, args)
-        elif DirectoryParser.test_file(path):
-            return DirectoryParser(path, self.patches, args)
-        else:
-            return None
+        for c in [
+            (XisoParser, FileReader), # XISO
+            (DirectoryParser, FileReader), # default.xbe
+            #(XisoParser, ZipReader), # zipped XISO (disabled, seek too slow)
+            (DirectoryParser, ZipReader), # zipped directory (experimental)
+        ]:
+            f = c[1](path)
+            parser = c[0](f, args)
+            if parser.valid:
+                parser.parse(self.patches)
+                return parser
+        print("Unsupported file format in file: " + path)
+        return None
 
     def end_headers(self):
         self.send_header('Accept-Ranges', 'bytes')

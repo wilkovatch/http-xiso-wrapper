@@ -25,6 +25,10 @@ Supported formats for images:
 - Redump-style XISO
 - Unpacked files (use the path of the default.xbe file like in the above example)
 - Zipped files (e.g. the default.xbe and the other files in a single .zip file) **(Experimental, can cause stuttering)**
+- CHD compressed XISO files (Standard or Redump-style) **(Experimental, slow)**
+
+**Important note:** To enable support for CHD files you need to have [chd-rs-py](https://github.com/chyyran/chd-rs-py) installed:
+`pip install chd-rs-py`
 
 Supported formats for patches:
 - JSON (see the `get_media_patch` method in `src/image_parsers/patches/patcher.py` for an example, note that an address (integer, field `address`) can be provided instead of the original data)

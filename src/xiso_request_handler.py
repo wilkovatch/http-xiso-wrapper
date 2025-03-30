@@ -11,6 +11,7 @@ from argument_parser import get_args
 from image_parsers.directory_parser import DirectoryParser
 from image_parsers.file_readers.file_reader import FileReader
 from image_parsers.file_readers.zip_reader import ZipReader
+from image_parsers.file_readers.chd_reader import ChdReader, CHD_ENABLED
 from image_parsers.patches.patch_parser import PatchParser
 from image_parsers.xiso_parser import XisoParser
 
@@ -110,12 +111,16 @@ class XisoRequestHandler(SimpleHTTPRequestHandler):
         return xiso_cache[path]
 
     def get_new_parser_for_file(self, path):
+        chd_reader = ChdReader if CHD_ENABLED else None
         for c in [
             (XisoParser, FileReader), # XISO
             (DirectoryParser, FileReader), # default.xbe
             #(XisoParser, ZipReader), # zipped XISO (disabled, seek too slow)
             (DirectoryParser, ZipReader), # zipped directory (experimental)
+            (XisoParser, chd_reader), # CHD compressed XISO (experimental)
         ]:
+            if c[1] is None:
+                continue
             f = c[1](path)
             parser = c[0](f, args)
             if parser.valid:

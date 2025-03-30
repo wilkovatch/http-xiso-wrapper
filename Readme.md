@@ -24,7 +24,7 @@ Supported formats for images:
 - Standard XISO
 - Redump-style XISO
 - Unpacked files (use the path of the default.xbe file like in the above example)
-- Zipped files (e.g. the default.xbe and the other files in a single .zip file) **(Experimental, slow)**
+- Zipped files (e.g. the default.xbe and the other files in a single .zip file) **(Experimental, can cause stuttering)**
 
 Supported formats for patches:
 - JSON (see the `get_media_patch` method in `src/image_parsers/patches/patcher.py` for an example, note that an address (integer, field `address`) can be provided instead of the original data)

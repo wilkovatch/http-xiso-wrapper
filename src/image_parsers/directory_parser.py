@@ -18,7 +18,7 @@ class DirectoryParser(OtherFormatsParser):
         f2 = f.open_subfile(filename)
         f2.seek(node["start"])
         data = f2.read(node["end"] - node["start"])
-        f2.close()
+        f.close_subfile(f2)
         return data
 
     def get_file_data(self, filename, start, length):
@@ -26,7 +26,7 @@ class DirectoryParser(OtherFormatsParser):
         f2 = f.open_subfile(filename)
         f2.seek(start)
         data = f2.read(length)
-        f2.close()
+        f.close_subfile(f2)
         return data
 
     def test_file(self):

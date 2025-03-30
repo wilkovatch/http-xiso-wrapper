@@ -39,6 +39,9 @@ class FileReader():
     def open_subfile(self, file):
         return open(file, 'rb')
 
+    def close_subfile(self, file):
+        file.close()
+
     def valid(self, pattern):
         fn = os.path.basename(self.filepath)
         return len(fnmatch.filter([fn], pattern)) > 0

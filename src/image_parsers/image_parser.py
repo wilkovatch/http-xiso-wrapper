@@ -3,6 +3,7 @@
 # See Notice.txt for licensing information
 
 from abc import ABC, abstractmethod
+import fnmatch
 import json
 
 from .patches.patcher import Patcher
@@ -47,8 +48,9 @@ class ImageParser(ABC):
         self.avl_tree = AVLTree(self.toc)
         title_id, _ = self.get_xbe_info()
         if self.requires_media_patch() or self.args.apply_media_patch:
-            media_patch = self.patcher.get_media_patch(title_id)
-            patches.append(media_patch)
+            xbes = fnmatch.filter(self.toc.keys(), "FILE:*.xbe")
+            media_patches = self.patcher.get_media_patches(title_id, xbes)
+            patches.extend(media_patches)
         self.patches = self.patcher.parse_patches(patches, title_id)
         self.f.close()
 

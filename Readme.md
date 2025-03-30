@@ -8,7 +8,7 @@ Command line arguments:
 - `--dvd_path PATH_TO_FILE`: starts the server in the directory of the file and launches xemu passing the corresponding URL as `dvd_path`
 - `--xemu_path PATH_TO_EXE`: specifies the path to the xemu executable (required if `--dvd_path` is used)
 - `--patches PATH1 PATH2 PATH3 ...`: applies the specified patches (see below for the supported formats, note that they won't be applied if the title_id (if present) does not match the current image), make sure you're using unmodified XBEs to avoid issues
-- `--apply_media_patch`: applies a media patch on the default.xbe file (it is done automatically for Redump-style images)
+- `--apply_media_patch`: applies a media patch on xbe files (it is done automatically for Redump-style images)
 - `--port PORT`: the port to use for the server (default is 8000)
 - `--verbose`: enables verbose output (outputs the files included in the range for each request among other things)
 

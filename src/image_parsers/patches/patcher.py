@@ -9,22 +9,25 @@ class Patcher():
     def __init__(self, parser):
         self.parser = parser
 
-    def get_media_patch(self, title_id):
-        patch = {
-            "title_id": title_id,
-            "data": [
-                {
-                    "file": "default.xbe",
-                    "operations": [
-                        {
-                            "original_data": "E8CAFDFFFF85C07D",
-                            "patched_data": "E8CAFDFFFF85C0EB"
-                        }
-                    ]
-                }
-            ]
-        }
-        return patch
+    def get_media_patches(self, title_id, xbes):
+        res = []
+        for xbe in xbes:
+            patch = {
+                "title_id": title_id,
+                "data": [
+                    {
+                        "file": xbe[5:],
+                        "operations": [
+                            {
+                                "original_data": "E8CAFDFFFF85C07D",
+                                "patched_data": "E8CAFDFFFF85C0EB"
+                            }
+                        ]
+                    }
+                ]
+            }
+            res.append(patch)
+        return res
 
     def parse_patches(self, patches, title_id):
         """

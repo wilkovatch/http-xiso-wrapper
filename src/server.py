@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import http.client
 import http.server as SimpleHTTPServer
 import os
 import subprocess
 import threading
 import urllib.parse
+import urllib.request
 
 from argument_parser import get_args
 from xiso_request_handler import XisoRequestHandler
@@ -21,16 +23,21 @@ def start_server():
                           bind=IP)
 
 if args.dvd_path:
-    # start the server on a separate thread
+    # start the server in the directory of the image, on a separate thread
+    path = os.path.dirname(args.dvd_path)
+    os.chdir(path)
     thread = threading.Thread(target=start_server)
     thread.daemon = True
     thread.start()
 
-    # start xemu and wait for it to exit
-    path = os.path.dirname(args.dvd_path)
+    # preload the dvd file
     filename = urllib.parse.quote_plus(os.path.basename(args.dvd_path))
-    os.chdir(path)
     dvd_url = "http://" + IP + ":" + str(args.port) + "/" + filename
+    conn = http.client.HTTPConnection(IP, args.port)
+    conn.request("HEAD", filename)
+    response = conn.getresponse()
+
+    # start xemu and wait for it to exit
     subprocess.call([args.xemu_path, '-dvd_path', dvd_url])
 else:
     # just start the server

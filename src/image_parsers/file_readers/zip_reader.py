@@ -10,7 +10,7 @@ class ZipReader(FileReader):
     Handles zip file reading. Experimental.
     Zip files are expected to contain the raw files.
     (e.g. with the default.xbe and all the other files)
-    Could work with zipped XISOs if the week wasn't slow.
+    Could work with zipped XISOs if the seek wasn't slow.
     Warning: seek is slow with large files.
     """
     def __init__(self, filepath):

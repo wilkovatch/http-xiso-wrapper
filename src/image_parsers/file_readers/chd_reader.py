@@ -47,16 +47,26 @@ class ChdReader(FileReader):
         self.pos = n % self.hunk_size
 
     def read(self, n):
-        #TODO: optimize
         data = bytearray(n)
-        for i in range(n):
+        left = n
+        i0 = 0
+        while left > 0:
             if self.pos >= self.hunk_size:
                 self.hunk += 1
                 self.buffer = self.f.hunk(self.hunk)
                 self.pos = 0
-            actual_pos = self.pos + 400 * (self.pos // 2048)
-            data[i] = self.buffer[actual_pos]
-            self.pos += 1
+            subhunk = (self.pos // 2048)
+            subhunk_end = (subhunk + 1) * 2048
+            next_pos = min(self.hunk_size, self.pos + left, subhunk_end)
+            offset = 400 * subhunk
+            j0 = offset + self.pos
+            j1 = offset + next_pos
+            delta = j1 - j0
+            i1 = i0 + delta
+            data[i0:i1] = self.buffer[j0:j1]
+            self.pos = next_pos
+            left -= delta
+            i0 = i1
         return bytes(data)
 
     def get_size(self):

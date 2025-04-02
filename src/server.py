@@ -38,7 +38,8 @@ if args.dvd_path:
     response = conn.getresponse()
 
     # start xemu and wait for it to exit
-    subprocess.call([args.xemu_path, '-dvd_path', dvd_url])
+    xemu_path = os.path.dirname(args.xemu_path)
+    subprocess.call([args.xemu_path, '-dvd_path', dvd_url], cwd=xemu_path)
 else:
     # just start the server
     start_server()

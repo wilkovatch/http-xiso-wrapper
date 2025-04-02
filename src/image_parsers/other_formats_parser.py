@@ -157,6 +157,8 @@ class OtherFormatsParser(ImageParser):
 
         # Left-right offsets
         for key, value in files.items():
+            if len(value['nodes']) == 0:
+                continue
             start_offset = value['nodes'][0]['entry_offset']
             offset_dict = {}
             for node in value["nodes"]:

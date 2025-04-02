@@ -51,11 +51,12 @@ class AVLTree:
         return res
 
     def traverse_tree(self, node, res):
-        res.append(node)
-        if node.left:
-            self.traverse_tree(node.left, res)
-        if node.right:
-            self.traverse_tree(node.right, res)
+        if node is not None:
+            res.append(node)
+            if node.left:
+                self.traverse_tree(node.left, res)
+            if node.right:
+                self.traverse_tree(node.right, res)
 
     def get_nodes_in_range(self, start, end):
         """

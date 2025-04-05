@@ -155,6 +155,8 @@ class AVLTree:
         return root
 
     def rotate_left(self, x):
+        if (x.right is None):
+            return x
         z = x.right
         t23 = z.left
         z.left = x
@@ -164,6 +166,8 @@ class AVLTree:
         return z
 
     def rotate_right(self, x):
+        if (x.left is None):
+            return x
         z = x.left
         t23 = z.right
         z.right = x

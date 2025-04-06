@@ -47,6 +47,8 @@ if args.patches is not None:
         else:
             print("Unable to load patch: " + patch)
 
+if not CHD_ENABLED:
+    print("chd-rs-py not found, CHD support disabled")
 
 class XisoRequestHandler(SimpleHTTPRequestHandler):
     """

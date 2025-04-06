@@ -37,6 +37,8 @@ class FileReader():
         return os.path.getsize(file)
 
     def open_subfile(self, file):
+        rel_path = os.path.relpath(self.get_root(), os.getcwd())
+        file = os.path.join(rel_path, file)
         return open(file, 'rb')
 
     def close_subfile(self, file):

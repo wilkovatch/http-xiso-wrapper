@@ -31,7 +31,7 @@ if args.dvd_path:
     thread.start()
 
     # preload the dvd file
-    filename = urllib.parse.quote_plus(os.path.basename(args.dvd_path))
+    filename = urllib.parse.quote(os.path.basename(args.dvd_path))
     dvd_url = "http://" + IP + ":" + str(args.port) + "/" + filename
     conn = http.client.HTTPConnection(IP, args.port)
     conn.request("HEAD", filename)

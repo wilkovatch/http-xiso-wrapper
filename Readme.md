@@ -18,7 +18,7 @@ Examples of usage (on Windows):
 - `python src/server.py --dvd_path "D:\Folder\Example\default.xbe" --xemu_path "D:\xemu\xemu.exe"`
 - `python src/server.py --dvd_path "D:\Folder\example.iso" --xemu_path "D:\xemu\xemu.exe" --patches "D:\Folder\patch1.ips" "D:\Folder\patch2.jmp"`
 
-To use this you need a build of xemu with support for loading files via URLs, on Linux you can use the latest official build, but on Windows there is [a bug](https://github.com/xemu-project/xemu/issues/2255) that prevents it from working, you can get a build with that bug fixed from [this fork](https://github.com/wilkovatch/xemu/tree/fix/aio-win32). (see [the workflow on the latest commit](https://github.com/wilkovatch/xemu/actions/runs/18056513156/job/51387044630) for the build, note that you have to be logged into GitHub to download them, if they expired fork it and it should build again)
+To use this you need a build of xemu with support for loading files via URLs, on Linux you can use the latest official build, but on Windows there is [a bug](https://github.com/xemu-project/xemu/issues/2255) that prevents it from working, you can get a build with that bug fixed from [this fork](https://github.com/wilkovatch/xemu/tree/fix/aio-win32). (see [the workflow on the latest commit](https://github.com/wilkovatch/xemu/actions/runs/20345108741/job/58455369428) for the build, note that you have to be logged into GitHub to download them, if they expired fork it and it should build again)
 
 Supported formats for images:
 - Standard XISO
